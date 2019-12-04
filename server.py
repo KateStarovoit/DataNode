@@ -89,13 +89,6 @@ def delete_queue(q_name):
 def get_statistics():
     return Node.statistics
 
-@Server.route('/save_statistics/')
-def save_statistics():
-    f = open('test.txt', 'w')
-    f.write(str(Node.statistics))
-    f.close()
-    return Node.statistics
-
 
 if __name__ == '__main__':
     Server.run("localhost",2000)
