@@ -6,17 +6,18 @@ class DataNode:
     def __init__(self, my_number):
         self.queue_sectors = dict()
         self.statistics = {
-            'create_queue': 0,
-            'delete_queue': 0,
-            'write_message': 0,
-            'read_message': 0}
+            'create_queue_duration': None,
+            'delete_queue_duration': None,
+            'write_message_duration': None,
+            'read_message_duration': None
+            }
 
     def duration(func):
         def inner(self, *args, **kwargs):
             start_time = time.time()
             res = func(self, *args, **kwargs)
             duration = time.time() - start_time
-            print('Duration of method {} call is {}'.format(func.__name__, duration))
+            self.statistics[func.__name__+'_duration'] = duration
             return res
         return inner
 
@@ -24,29 +25,29 @@ class DataNode:
     def create_queue(self, queue_name):
         if queue_name not in self.queue_sectors:
             self.queue_sectors[queue_name] = []
-        self.statistics['create_queue'] += 1
+            self.statistics['msg_num_in_'+queue_name] = 0
 
     @duration
     def delete_queue(self, queue_name): 
-        self.statistics['delete_queue'] += 1
         try:
             del self.queue_sectors[queue_name]
+            del self.statistics['msg_num_in_'+queue_name]
         except KeyError:
             'No such qname'
 
     @duration
     def write_message(self, queue_name, message):
-        self.statistics['write_message'] += 1
         try:
             self.queue_sectors[queue_name].append(message)
+            self.statistics['msg_num_in_'+queue_name] += 1
         except KeyError:
             'No such qname'
 
     @duration
     def read_message(self, queue_name):
-        self.statistics['read_message'] += 1
         try:
             msg = self.queue_sectors[queue_name].pop()
+            self.statistics['msg_num_in_'+queue_name] -= 1
         except KeyError:
             msg = 'No such qname'
         except IndexError:
@@ -80,12 +81,12 @@ def create_queue():
     return content
 
 @Server.route('/delete_queue/', methods=["POST"])
-def delete_queue(q_name):
+def delete_queue():
     content = flask.request.json
-    Node.delete_queue_queue(content["qname"])
+    Node.delete_queue(content["qname"])
     return "deleted"
 
-@Server.route('/get_statistics/')
+@Server.route('/get_statistics/', methods=["POST"])
 def get_statistics():
     return Node.statistics
 
