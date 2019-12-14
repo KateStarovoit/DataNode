@@ -1,6 +1,8 @@
 import flask
 import json
 import time
+import threading
+from datetime import datetime
 
 class DataNode:
     def __init__(self, my_number):
@@ -9,7 +11,8 @@ class DataNode:
             'create_queue_duration': None,
             'delete_queue_duration': None,
             'write_message_duration': None,
-            'read_message_duration': None
+            'read_message_duration': None,
+            'datetime': (datetime.now()).strftime("%m/%d/%Y, %H:%M:%S")
             }
 
     def duration(func):
@@ -88,9 +91,23 @@ def delete_queue():
 
 @Server.route('/get_statistics/', methods=["POST"])
 def get_statistics():
-    return Node.statistics
+    with open('statistics.json', 'r') as f:
+        data = json.load(f)
+    with open('statistics.json', 'w') as f:
+        pass
+    return data
+
+def save_statistics():
+    while True:
+        time.sleep(60)
+        now = datetime.now()
+        Node.statistics['datetime'] = now.strftime("%m/%d/%Y, %H:%M:%S")
+        with open('statistics.json', 'a') as f:
+            json.dump(Node.statistics, f)
 
 
 if __name__ == '__main__':
+    t = threading.Thread(target=save_statistics)
+    t.start()
     Server.run("localhost",2000)
    # Server.run(host="192.168.43.40", port="2000")
