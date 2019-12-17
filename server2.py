@@ -7,16 +7,34 @@ import copy
 
 
 class DataNode:
-    def __init__(self,my_number):
+    def __init__(self, my_number):
+        self.id = my_number
         self.queue_sectors = dict()
         self.statistics = {
-            'my_number':my_number,
+            'my_number': my_number,
             'create_queue_duration': 0.0,
             'delete_queue_duration': 0.0,
             'write_message_duration': 0.0,
             'read_message_duration': 0.0
         }
         self.stats_dict = dict()
+
+        now = datetime.now()
+        self.stats_dict[now.strftime("%m/%d/%Y, %H:%M:%S")] = self.statistics
+
+        f = open("statistics.json", 'r+')
+
+
+        data = json.load(f)
+
+        data['node{}'.format(self.id)] = self.statistics
+        f.close()
+        f = open("statistics.json", 'w')
+
+        json.dump(data, f)
+        f.close()
+
+
 
     def duration(func):
         def inner(self, *args, **kwargs):
@@ -102,11 +120,23 @@ def run_Datanode(port, id):
 
     def save_statistics():
         while True:
-            time.sleep(60)
+            time.sleep(5)
             now = datetime.now()
             Node.stats_dict[now.strftime("%m/%d/%Y, %H:%M:%S")] = Node.statistics
 
+            f = open("statistics.json", 'r+')
+
+            data = json.load(f)
+
+            data['node{}'.format(Node.id)] = Node.statistics
+            f = open("statistics.json", 'w')
+
+            json.dump(data, f)
+            f.close()
+            # print(Node.statistics)
+
+
     t = threading.Thread(target=save_statistics)
-    t.daemon = True
+    # t.daemon = True
     t.start()
     Server.run("localhost", port)
