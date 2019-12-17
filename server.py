@@ -3,17 +3,18 @@ import json
 import time
 import threading
 from datetime import datetime
+import copy
 
 class DataNode:
-    def __init__(self, my_number):
+    def __init__(self):
         self.queue_sectors = dict()
         self.statistics = {
-            'create_queue_duration': None,
-            'delete_queue_duration': None,
-            'write_message_duration': None,
-            'read_message_duration': None,
-            'datetime': (datetime.now()).strftime("%m/%d/%Y, %H:%M:%S")
+            'create_queue_duration': 0.0,
+            'delete_queue_duration': 0.0,
+            'write_message_duration': 0.0,
+            'read_message_duration': 0.0
             }
+        self.stats_dict = dict()
 
     def duration(func):
         def inner(self, *args, **kwargs):
@@ -58,7 +59,7 @@ class DataNode:
         return msg
 
 
-Node = DataNode(1)
+Node = DataNode()
 
 
 Server = flask.Flask(__name__)
@@ -91,23 +92,19 @@ def delete_queue():
 
 @Server.route('/get_statistics/', methods=["POST"])
 def get_statistics():
-    with open('statistics.json', 'r') as f:
-        data = json.load(f)
-    with open('statistics.json', 'w') as f:
-        pass
+    data = Node.stats_dict.copy()
+    Node.stats_dict.clear()
     return data
 
 def save_statistics():
     while True:
         time.sleep(60)
         now = datetime.now()
-        Node.statistics['datetime'] = now.strftime("%m/%d/%Y, %H:%M:%S")
-        with open('statistics.json', 'a') as f:
-            json.dump(Node.statistics, f)
-
+        Node.stats_dict[now.strftime("%m/%d/%Y, %H:%M:%S")] = Node.statistics
 
 if __name__ == '__main__':
     t = threading.Thread(target=save_statistics)
+    t.daemon = True
     t.start()
     Server.run("localhost",2000)
    # Server.run(host="192.168.43.40", port="2000")
