@@ -22,6 +22,12 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(r.content[:-1], b'{"qname":"B"}')
         r=requests.post("http://localhost:5001/get_queues", json={})
         self.assertEqual(r.content[:-1], b'{"A":[],"B":[]}')
+    
+    def test_delete_queue(self):
+        r=requests.post("http://localhost:5001/delete_queue", json={"qname":"A"})
+        self.assertEqual(r.content, b'deleted')
+        r=requests.post("http://localhost:5001/get_queues", json={})
+        self.assertEqual(r.content[:-1], b'{"B":[]}')
 
 unittest.main()
 
